@@ -2,74 +2,61 @@ import { Notify } from 'notiflix/build/notiflix-notify-aio';
 import { fetchBreeds, fetchCatByBreed } from './cat-api';
 import SlimSelect from 'slim-select'
 
+
 const select = document.querySelector('.breed-select');
 const loader = document.querySelector('.loader');
 const catInfo = document.querySelector('.cat-info');
 const body = document.querySelector('body');
 
+// select.style.visibility = 'hidden';
 
+loader.style.display = 'none';
+document.querySelector('.loading-text').style.visibility = 'hidden';
 
-const hideElement = element => {
-  element.style.display = 'none';
-};
+fetchBreeds()
+  .then(breeds => {
+    select.style.visibility = 'visible';
+    loader.style.display = 'none';
 
-const showElement = element => {
-  element.style.display = 'block';
-};
+    const cat = breeds
+      .map(breed => `<option value="${breed.id}">${breed.name}</option>`)
+      .join('');
 
-const populateBreedsSelect = breeds => {
-  select.innerHTML = breeds
-    .map(breed => `<option value="${breed.id}">${breed.name}</option>`)
-    .join('');
-};
+    select.insertAdjacentHTML('beforeend', cat);
+  })
+  .catch(error => {
+    console.log(error);
+    loader.style.display = 'none';
+    Notify.failure('Oops! Something went wrong! Try reloading the page!');
+  });
 
-const displayCatInfo = catData => {
-  const { breeds } = catData[0];
+select.addEventListener('change', function () {
+  catInfo.innerHTML = '';
+  const selectedBreed = this.value;
 
-  catInfo.innerHTML = `
-    <div><img src="${catData[0].url}" width="400" alt="${breeds[0].name}"></div>
-    <div>
-      <h3>${breeds[0].name}</h3>
-      <p>Description: ${breeds[0].description}</p>
-      <p>Temperament: ${breeds[0].temperament}</p>
-    </div>
-  `;
-
-  catInfo.style.display = 'flex';
-  catInfo.style.gap = '30px';
-  catInfo.style.marginTop = '50px';
-};
-
-const handleBreedSelectChange = () => {
-  const selectedBreed = select.value;
-  hideElement(catInfo);
-  showElement(loader);
+  loader.style.display = 'block';
 
   fetchCatByBreed(selectedBreed)
-    .then(displayCatInfo)
-    .catch(error => {
-      console.error(error);
-      hideElement(loader);
-      Notify.failure('Oops! Something went wrong! Try reloading the page!');
-    })
-    .finally(() => showElement(catInfo));
-};
-
-const initializeApp = () => {
-  hideElement(select);
-  fetchBreeds()
     .then(breeds => {
-      showElement(select);
-      hideElement(loader);
-      populateBreedsSelect(breeds);
+      loader.style.display = 'none';
+      const catData = breeds[0];
+
+      catInfo.innerHTML = `
+    <div><img src="${catData.url}" width="400" alt="${catData.breeds[0].name}"></div>
+    <div>
+    <h3>${catData.breeds[0].name}</h3>
+    <p>Description: ${catData.breeds[0].description}</p>
+    <p>Temperament: ${catData.breeds[0].temperament}</p>
+    </div>
+    `;
+
+      catInfo.style.display = 'flex';
+      catInfo.style.gap = '30px';
+      catInfo.style.marginTop = '50px';
     })
     .catch(error => {
-      console.error(error);
-      hideElement(loader);
+      console.log(error);
       Notify.failure('Oops! Something went wrong! Try reloading the page!');
     });
-};
+});
 
-select.addEventListener('change', handleBreedSelectChange);
-
-initializeApp();
